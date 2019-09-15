@@ -3,6 +3,9 @@
         <title>p5.js Camera Example</title>
         <script defer src=https://cdn.JsDelivr.net/npm/p5></script>
         <script defer src=https://cdn.JsDelivr.net/npm/p5/lib/addons/p5.dom.min.js></script>
+        <script defer src=https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.sound.min.js></script>
+        
+
     </head>
     <body>
 
@@ -12,7 +15,27 @@
         var vScale = 1;
         var scanLine = 0;
 
+        let notes = [ 60, 62, 64, 65, 67, 69, 71];
+        let osc;
+        let play = false;
+        let audioContext;
+
+        // A function to play a note
+        function playNote(note, duration) {
+            osc.freq(midiToFreq(note));
+            // Fade it in
+            osc.fade(0.5,0.2);
+
+            // If we sest a duration, fade it out
+            if (duration) {
+                setTimeout(function() {
+                osc.fade(0,0.2);
+                }, duration-20);
+            }
+        }
+
         function setup() {
+            console.log('setup start');
             const cw = 640;
             const ch = 480;
             createCanvas(cw, ch);
@@ -20,7 +43,20 @@
             video = createCapture(VIDEO);
             video.size(cw/vScale, ch/vScale);
             video.hide();
-            //fullscreen(true);
+  
+            console.log('video setup is done');
+        
+            //audioContext = new AudioContext();
+            // A triangle oscillator
+            osc = new p5.TriOsc();
+            // Start silent
+            osc.start();
+            osc.amp(0);
+
+            console.log('sound setup is done');
+
+            frameRate(30)
+            
         }
 
         function draw() {
@@ -36,26 +72,39 @@
             if (scanLine == height)
                 scanLine = 0;
 
-            if(false){
-                for (var y = 0; y < video.height; y++) {
-                    for (var x = 0; x < video.width; x++) {
-                        var index = (video.width - x + 1 + (y * video.width))*4;
-                        var r = video.pixels[index+0];
-                        var g = video.pixels[index+1];
-                        var b = video.pixels[index+2];
+            
+            const column = width / 2;
+            for (var y = 0; y < video.height; y++) {
+                const x = column;
+                
+                var index = (video.width - x + 1 + (y * video.width))*4;
+                var r = video.pixels[index+0];
+                var g = video.pixels[index+1];
+                var b = video.pixels[index+2];
 
-                        var bright = (r+g+b)/3;
+                var bright = (r+g+b)/3;
 
-                        var w = map(bright, 0, 255, 0, vScale);
-
-                        noStroke();
-                        fill(255);
-                        rectMode(CENTER);
-                        rect(x*vScale, y*vScale, w, w);
-                    }
-                }
+                var key = map(bright, 0, 255, 0, notes.length);
+                if(play)
+                    playNote(notes[key], 20);
             }
         }
+
+        function mousePressed(event) {
+            if(1){
+                getAudioContext().resume().then(() => {
+                    console.log('Playback resumed successfully');
+                });
+            }
+            
+            play = true;
+        }
+
+
+        function mouseReleased() {
+            play = false;
+        }
+
 
     </script>
 </html>
