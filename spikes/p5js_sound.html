@@ -1,0 +1,168 @@
+<html>
+    <head>
+        <title>p5.js Camera Example</title>
+        <script defer src=https://cdn.JsDelivr.net/npm/p5></script>
+        <script defer src=https://cdn.JsDelivr.net/npm/p5/lib/addons/p5.dom.min.js></script>
+        <script defer src=https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.sound.min.js></script>
+        
+
+    </head>
+    <body>
+
+    </body>
+    <script>
+        var img;
+        var scanLine = 0;
+
+        let notes = [ 0, 60, 62, 64, 65, 67, 69, 71];
+        let oscMap = {}
+        let osc;
+        let play = false;
+        let audioContext;
+        var notesToPlay = [];
+
+        function setup() {
+            const cw = 640;
+            const ch = 480;
+            createCanvas(cw, ch);
+            pixelDensity(1);
+
+            frameRate(15)
+
+            img = createImage(cw, ch);
+            img.loadPixels();
+            if(true) {
+                //Fill it with white
+                for (let x = 0; x < img.width; x++) {
+                    for (let y = 0; y < img.height; y++) {
+                        img.set(x, y, [255, 255, 255, 255]);
+                    }
+                }
+
+                //And draw some black points
+                const column = img.width / 2 
+                for (let y = 0; y < img.height; y++) {
+                    if( (y % 30) > 10)
+                        img.set(column, y, [0, 0, 0, 255]);
+                }
+            }
+            img.updatePixels();
+
+            //audio for each note
+            for(let note of notes) {
+                osc = new p5.TriOsc();
+                osc.start();
+                osc.amp(0);
+                oscMap[note] = [osc, false]; //Keep each osc but in not playing mode
+            }
+            console.log(oscMap);
+        }
+
+        function draw() {
+            background(0);
+            image(img, 0, 0);
+
+            
+            if(play){
+                img.loadPixels();
+                
+                //Get the note from current scanline
+                notesToPlay = [];
+                for (x = 0; x < img.width; x++) {
+                    let index = (x + scanLine * img.width) * 4;
+                    const r = 255 - img.pixels[index + 0];
+                    const g = 255 - img.pixels[index + 1];
+                    const b = 255 - img.pixels[index + 2];
+                    const a = img.pixels[index + 3];
+                    const bright = (r + g + b) / 3;
+                    if(bright > 0){
+                        var key = ceil(map(bright, 0, 255, 0, notes.length));
+                        if(key >= notes.length)
+                            key --;
+
+                        const note = notes[key]
+
+                        if(note in notesToPlay || !note){}
+                        else { 
+                            notesToPlay.push(note); 
+                        }              
+                    }          
+                }
+                
+                //Start each note if it is not already started 
+                for(let note of notesToPlay){
+                    note = parseInt(note);
+                    var oscInfo = oscMap[note];
+                    
+                    if(oscInfo[1] == false) {
+                        if(1){
+                            const osc = oscInfo[0];
+                            osc.freq(midiToFreq(note));
+                            osc.fade(0.5,0.2); // Fade it in
+                        }
+                        oscInfo[1] = true;
+                    } 
+                }
+
+                //Stop each playing note if it is not in the notesToPlay list
+                for(note in oscMap){
+                    note = parseInt(note);
+                    var oscInfo = oscMap[note];
+                    
+                    if(oscInfo[1] == true){
+                        if (notesToPlay.indexOf(note) >= 0)
+                            continue;
+                        if(1){
+                            const osc = oscInfo[0];
+                            setTimeout(function() {
+                                osc.fade(0,0.2);
+                            }, 0);
+                        }
+                        oscInfo[1] = false;
+                    }
+                }
+                
+                scanLine ++;
+                if (scanLine == height)
+                    scanLine = 0;
+            }
+
+            //scan line
+            stroke(128);
+            line(0, scanLine, width, scanLine);
+
+        }
+
+        function mousePressed(event) {
+            if(1){
+                getAudioContext().resume().then(() => {
+                    console.log('Playback resumed successfully');
+                });
+            
+                play = true;
+            }
+            
+            
+        }
+
+
+        function mouseReleased() {
+            play = false;
+
+            //Stop all
+            for(note in oscMap){
+                const oscInfo = oscMap[note];
+                if(oscInfo[1]){
+                    const osc = oscInfo[0];
+                    setTimeout(function() {
+                        osc.fade(0,0.2);
+                    }, 0);
+                    
+                    oscMap[1] = false;
+                }
+            }
+        }
+
+
+    </script>
+</html>
