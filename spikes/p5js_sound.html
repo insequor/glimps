@@ -26,7 +26,7 @@
             const ch = 480;
             createCanvas(cw, ch);
             pixelDensity(1);
-
+            
             frameRate(15)
 
             img = createImage(cw, ch);
@@ -40,10 +40,28 @@
                 }
 
                 //And draw some black points
-                const column = img.width / 2 
-                for (let y = 0; y < img.height; y++) {
-                    if( (y % 30) > 10)
-                        img.set(column, y, [0, 0, 0, 255]);
+                {
+                    const column = img.width / 2 
+                    for (let y = 0; y < img.height; y++) {
+                        if( (y % 30) > 10)
+                            img.set(column, y, [0, 0, 0, 255]);
+                    }
+                }
+
+                {
+                    const column = img.width / 3 
+                    for (let y = 0; y < img.height; y++) {
+                        if( (y % 40) > 20)
+                            img.set(column, y, [0, 0, 255, 255]);
+                    }
+                }
+
+                {
+                    const column = img.width / 4 
+                    for (let y = 0; y < img.height; y++) {
+                        if( (y % 20) > 10)
+                            img.set(column, y, [0, 255, 255, 255]);
+                    }
                 }
             }
             img.updatePixels();
