@@ -1,0 +1,198 @@
+<html>
+    <head>
+        <title>p5.js PolySynth Example</title>
+        <script defer src=https://cdn.JsDelivr.net/npm/p5></script>
+        <script defer src=https://cdn.JsDelivr.net/npm/p5/lib/addons/p5.dom.min.js></script>
+        <script defer src=https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.sound.min.js></script>
+        <script type="text/javascript" src="http://chir.ag/projects/ntc/ntc.js"></script>
+        
+
+    </head>
+    <body>
+
+    </body>
+    <script>
+        var img;
+        var scanLine = 0;
+
+        const startNote = 43;
+        const MidiNotes = {
+            '000': startNote, 
+            '100': startNote + 11 * 1, 
+            '010': startNote + 11 * 2, 
+            '001': startNote + 11 * 3,
+            '110': startNote + 11 * 4, 
+            '101': startNote + 11 * 5, 
+            '011': startNote + 11 * 6,
+            '111': startNote + 11 * 7
+        };
+        let notes = {}
+        let play = false;
+        let audioContext;
+        var polySynth;
+        
+        const midiMin = 0;
+        const midiMax = 127;
+        const colorMin = parseInt('000000', 16);
+        const colorMax = parseInt('ffffff', 16);
+        const ignoreThreshold = 250;
+        const includeThreshold = 125;
+
+        console.log(colorMin, colorMax);
+
+        function setup() {
+            console.log(MidiNotes);
+            const cw = 640;
+            const ch = 480;
+            createCanvas(cw, ch);
+            pixelDensity(1);
+
+            frameRate(30)
+
+            img = createImage(cw, ch);
+            img.loadPixels();
+            if(true) {
+                //Fill it with white
+                for (let x = 0; x < img.width; x++) {
+                    for (let y = 0; y < img.height; y++) {
+                        img.set(x, y, [255, 255, 255, 255]);
+                    }
+                }
+
+                //And draw some black points
+                if(1){
+                    index = 1;
+                    for(let note of ['000', '100', '010', '001', '110', '101', '011']) {
+                        
+                        r = note[0] == '1' ? includeThreshold + 1 : 0;
+                        g = note[1] == '1' ? includeThreshold + 1: 0;
+                        b = note[2] == '1' ? includeThreshold + 1: 0;
+                        
+                        console.log(note, r, g, b);
+
+                        const column = index * img.width / 10 
+                        for (let y = 0; y < img.height; y++) {
+                            const yy = y % 200;
+                            if( yy >= (20 * index) && yy < ( 20 * (index + 1) + 10 ) )
+                                img.set(column, y, [r, g, b, 255]);
+                        }
+
+                        index ++;
+
+                    }
+                }
+
+                if(0)
+                {
+                    const column = img.width / 4 
+                    for (let y = 0; y < img.height; y++) {
+                        if( (y % 20) < 10)
+                            img.set(column, y, [0, 0, 0, 255]);
+                    }
+                }
+
+                if(0)
+                {
+                    const column = img.width / 3 
+                    for (let y = 0; y < img.height; y++) {
+                        if( (y % 50) > 20 && (y % 50) < 30)
+                            img.set(column, y, [0, 0, 255, 255]);
+                    }
+                }
+
+                if(0)
+                {
+                    const column = img.width / 2 
+                    for (let y = 0; y < img.height; y++) {
+                        if( (y % 50) > 25)
+                            img.set(column, y, [0, 0, 0, 255]);
+                    }
+                }
+
+            }
+            img.updatePixels();
+        }
+
+        function draw() {
+            background(0);
+            image(img, 0, 0);
+
+            var notesToPlay = [];
+
+            if(play){
+                img.loadPixels();
+                
+                //Get the note from current scanline
+                notesToPlay = [];
+                for (x = 0; x < img.width; x++) {
+                    let index = (x + scanLine * img.width) * 4;
+                    const r = img.pixels[index + 0];
+                    const g = img.pixels[index + 1];
+                    const b = img.pixels[index + 2];
+                    const a = img.pixels[index + 3];
+                    
+                    //White is ignored, or close to white
+                    if(r >= ignoreThreshold && g >= ignoreThreshold && b >= ignoreThreshold)
+                        continue;
+                    
+                    const hasR = (r >= includeThreshold) ? '1' : '0';
+                    const hasG = (g >= includeThreshold) ? '1' : '0';
+                    const hasB = (b >= includeThreshold) ? '1' : '0';
+                    const colorCode = hasR + hasG + hasB;
+
+                    var note = MidiNotes[colorCode];
+                    //console.log(colorCode, note);
+                    if(! (note in notesToPlay) && note){ 
+                        notesToPlay.push(note); 
+                    }
+                }
+                
+                //Start each note if it is not already started 
+                for(let note of notesToPlay){
+                    note = parseInt(note);
+                    if(!notes[note]) {
+                        polySynth.noteAttack(midiToFreq(note), 1.0, 0.0);
+                        console.log('start:', note, midiToFreq(note));
+                        notes[note] = true;
+                    } 
+                }
+
+                //Stop each playing note if it is not in the notesToPlay list
+                for(note in notes){
+                    note = parseInt(note);
+                    
+                    if(notes[note]){
+                        if (notesToPlay.indexOf(note) < 0){
+                            polySynth.noteRelease(midiToFreq(note), 0.0);
+                            console.log('stop:', note);
+                            notes[note] = false;
+                        }
+                    }
+                }
+                
+                scanLine ++;
+                if (scanLine == height)
+                    scanLine = 0;
+            }
+
+            //scan line
+            stroke(128);
+            line(0, scanLine, width, scanLine);
+
+        }
+
+        function touchStarted(event) {
+            polySynth = new p5.PolySynth();
+            play = true;
+        }
+
+
+        function touchEnded() {
+            play = false;
+            polySynth.dispose();
+            notes = {};
+        }
+
+
+    </script>
+</html>
