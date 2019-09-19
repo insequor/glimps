@@ -97,7 +97,7 @@
             }
         }
 
-        function mousePressed(event) {
+        function touchStarted(event) {
             if(1){
                 getAudioContext().resume().then(() => {
                     console.log('Playback resumed successfully');
@@ -108,7 +108,7 @@
         }
 
 
-        function mouseReleased() {
+        function touchEnded() {
             play = false;
         }
 
