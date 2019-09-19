@@ -40,7 +40,14 @@
             const ch = 480;
             createCanvas(cw, ch);
             pixelDensity(1);
-            video = createCapture(VIDEO);
+            var constraints = {
+                audio: false,
+                video: {
+                    facingMode: "environment"
+                }
+            };
+            
+            video = createCapture(constraints);
             video.size(cw/vScale, ch/vScale);
             video.hide();
   
